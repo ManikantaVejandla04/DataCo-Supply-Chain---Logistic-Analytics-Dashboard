@@ -1,84 +1,131 @@
-# Global Supply Chain & Logistics Analytics Engineering
+# DataCo Supply Chain & Logistics Analytics
 
-An end-to-end data analytics and business intelligence project engineering a scalable data pipeline, relational database star schema, optimization views, and interactive multi-page Power BI dashboards to diagnose delivery risk performance and financial leakages for a global retail operation.
+End-to-end analytics pipeline on a 180,519-row global supply chain dataset (2015–2018), covering data cleaning and feature engineering in Python, dimensional modeling and analytical SQL on SQL Server, and a 6-page executive Power BI dashboard. Built to mirror how a Big 4 data & analytics team would scope, model, and report on supply chain performance for a retail client.
 
----
-
-## 📊 Executive Dashboard Analytics
-The presentation layer consists of an interactive corporate dashboard designed for regional directors and operational teams to evaluate baseline performance across logistics networks.
-
-### 1. Delivery Performance & Logistics Dashboard
-* **Purpose:** Provides a high-level tracking system for regional managers to audit delivery schedules and mitigate operational friction.
-* **Key Features:** High-impact KPI blocks tracking total sales, total profit, total orders, and average delay timelines. Includes a regional map overlay visualizing order concentrations alongside a matrix showing real versus scheduled fulfillment timelines.
-
-### 2. Financial Analytics & Trend Tracking
-* **Purpose:** Offers finance leads visibility into net profitability patterns and rolling revenue adjustments over time.
-* **Key Features:** Combined volume and margin trend lines mapping monthly historical timelines alongside specialized payment type breakdowns to trace the financial velocity of standard corporate billing loops.
-
-### 3. Diagnostic Risk & Loss Deep-Dive
-* **Purpose:** Empowers supply chain analysts to identify and address core financial leaks and fulfillment exceptions.
-* **Key Features:** Uses an interactive Decomposition Tree to trace negative-margin products directly down to specific operational departments (e.g., Fan Shop, Apparel, Golf). Features a late-delivery risk heat matrix built to isolate problematic shipping classifications.
+**[Live Portfolio](https://manikantavejandla.netlify.app)** · **[LinkedIn](https://linkedin.com/in/manikanta1015)**
 
 ---
 
-## 🏗️ Data Architecture & Star Schema Design
-To transform raw flat-file transactional dumps into an efficient enterprise-grade warehouse environment, the transactional record was structurally decoupled into a clean **Star Schema** optimization structure (`DataCoDB`).
+## Business Problem
 
-* **Fact Table:** `fact_orders` – Tracks quantitative pipeline measurements including transaction values, specific items, unit sales, margins, and operational risk metrics.
-* **Dimension Tables:** * `dim_customer`: Unique identifier attributes, geographic regions, demographics, and buyer segmentation.
-  * `dim_product`: Product catalog indexing, categories, base pricing, and departments.
-  * `dim_date`: Time-intelligence metrics containing quarters, relative financial calendar months, weekly breakdowns, and weekend flag maps.
+A global retailer operating across five markets (Europe, LATAM, Pacific Asia, USCA, Africa) needed visibility into two linked questions: where is the business losing money, and where is it failing to deliver on time. This project answers both by building a governed data model and a dashboard that lets stakeholders move from headline KPIs down to the specific market, department, or shipping mode driving the result.
 
----
+## Key Findings
 
-## 🛠️ Data Pipeline & Repository Workflow
+- **Late delivery is systemic, not isolated.** 54.8% of all shipments arrive late, and every region exceeds a 45% late-risk threshold — this is a network-wide fulfillment issue, not a regional one.
+- **Standard Class is the single biggest delivery bottleneck.** It carries the highest shipment volume and the highest share of late deliveries, while Same Day shipping has the lowest late rate.
+- **Revenue and margin are concentrated.** Europe and LATAM generate the largest share of sales and profit, while Fan Shop and Apparel are the leading departments by revenue; Fitness, Outdoors, and Apparel deliver the strongest margins (>11%).
+- **Discounting is eroding profit.** Orders with 0–10% discount generate the most total profit; profitability declines as discount depth increases.
+- **33,784 orders (about 1 in 5) post a negative profit**, totaling a **$3.88M loss**, concentrated in the Fan Shop and Apparel departments and most pronounced in Europe and LATAM — the same markets driving the most revenue.
+- **Order funnel leakage is measurable**: 4,062 orders are flagged as suspected fraud and 3,692 are canceled, both representing direct revenue leakage worth monitoring.
 
-### Step 1: Programmatic Profiling, ETL, & Transformation (`01_load_clean.ipynb`, `03_sql_export.ipynb`)
-* Automated programmatic intake utilizing Python's ecosystem (**Pandas**, **NumPy**) to safely digest complex multi-encoded transactional histories.
-* Evaluated null distributions and established deterministic clean records for column names, string structures, and spatial mappings.
-* Programmatically structured relational tables out of high-order structures, outputting dimension files mapped precisely to downstream schema definitions.
+## Tech Stack
 
-### Step 2: Diagnostic Exploratory Analysis (`02_eda (1).ipynb`)
-* Derived foundational performance baselines across internal supply channels using **Seaborn** and **Matplotlib**.
-* Diagnosed macro failure trends—exposing that over half of operational orders breached initial delivery schedules, pointing toward a significant logistical gap.
-* Conducted diagnostic grouping routines to classify negative-margin products across enterprise departments.
+| Layer | Tools |
+|---|---|
+| Data Cleaning & EDA | Python, pandas, NumPy, Matplotlib, Seaborn |
+| Database & Modeling | SQL Server (T-SQL), SQLAlchemy, star schema design |
+| Analytics | Window functions, CTEs, BULK INSERT, indexing |
+| Visualization | Power BI (DAX, bookmarks, drill-through, tooltip pages) |
+| Export Pipeline | pandas → SQLAlchemy → SQL Server |
 
-### Step 3: Relational Schema DDL & Bulk Ingestion Pipeline (`SQL Data load.sql`)
-* Implemented the target schema directly into Microsoft SQL Server with strict DDL configurations, establishing explicitly typed primary key restrictions and check parameters (`CHECK BETWEEN 1 AND 12` bounds for relational calendar months).
-* Utilized raw engine query architectures (**BULK INSERT**) to stream pre-processed dimension files cleanly from local drives.
-* Optimized pipeline ingestion safety by setting up transaction segment bounds (`BATCHSIZE = 10000`), reducing transactional log footprint and avoiding runtime engine freezes.
+## Architecture
 
-### Step 4: Enterprise Analytical Engineering (`SQL Queries.sql`)
-* Developed enterprise views (`vw_delivery_performance`) to calculate on-time rates (OTD%), absolute delay durations, and ongoing fulfillment failure probabilities.
-* Wrote financial window frameworks (`SUM(SUM(sales)) OVER(...)`) to calculate rolling annual performance trajectories and track shifting regional profit margins.
-* Implemented conditional grouping scripts to systematically audit negative returns, isolating problematic inventory lines and pricing structures.
+```
+DataCoSupplyChainDataset.csv (180,519 rows, 53 columns)
+        │
+        ▼
+01_load_clean.ipynb        →  drop PII/redundant columns, rename to snake_case,
+                               fix datatypes, engineer delivery/profit/discount flags
+        │
+        ▼
+02_eda.ipynb                →  8-section exploratory analysis with documented
+                               business insights (delivery, sales, profit, segment,
+                               funnel, loss investigation)
+        │
+        ▼
+03_sql_export.ipynb         →  split cleaned data into star schema (3 dims + 1 fact),
+                               push to SQL Server via SQLAlchemy
+        │
+        ▼
+SQL Server (DataCoDB)       →  BULK INSERT load, PK/FK constraints, indexing,
+                               20+ analytical queries, 1 reporting view
+        │
+        ▼
+Power BI Dashboard          →  6 report pages + drill-through tooltip cards,
+                               DAX measures, executive-ready visuals
+```
 
-### Step 5: Executive Power BI Dashboard Development
-* Connected the optimized SQL database to **Power BI Desktop** via import models to assemble a responsive analytics environment.
-* Authored custom **DAX** measures to populate metrics for total transactions, shipping variations, and conditional formatting parameters.
-* Deployed **Decomposition Trees** and custom data-bars inside matrices to give business stakeholders immediate root-cause clarity regarding supply chain friction.
+## Data Model
 
----
+A star schema with one fact table and three dimensions:
 
-## 📈 Strategic Business Insights Drafted From Database Assets
-1. **Logistics Bottlenecks:** Standard and First-Class transportation systems display high overall baseline delay frequencies. In particular, First-Class delivery mechanisms maintain severe baseline delay liabilities, highlighting a need for contractual service-level validation or re-routing strategies.
-2. **Margin Protection:** Diagnostic auditing via the Power BI decomposition trees reveals deep baseline net losses centered around specific product segments like **Fan Shop, Apparel, and Golf**, calling for automated promotional modifications, dynamic cost structures, or baseline asset adjustments.
-3. **Fulfillment Failures:** Clear variations exist in on-time delivery rates (OTD%) across global distribution networks, indicating opportunities to adopt localized inventory positioning strategies to shield critical consumer blocks.
+- **`fact_orders`** (180,519 rows) — order-item grain transactional table: sales, profit, discount, shipping dates, delivery flags, geography
+- **`dim_customer`** (20,652 rows) — customer demographics and segment
+- **`dim_product`** (118 rows) — product, category, and department hierarchy
+- **`dim_date`** (1,127 rows) — calendar dimension for time intelligence
 
----
+`fact_orders` references both `dim_customer` and `dim_product` via foreign keys. Indexes are applied on `market`, `delivery_status`, and `order_date` (each with relevant `INCLUDE` columns) to support the dashboard's most common filter and aggregation patterns.
 
-## 💻 Tech Stack Implemented
-* **Languages:** Python (v3.9+), SQL (T-SQL/MS SQL Server)
-* **Libraries:** Pandas, NumPy, SQLAlchemy, Matplotlib, Seaborn
-* **Data Architecture:** Relational Warehousing, Dimensional Star Schema Design, View Optimization
-* **BI Presentation Layer:** Microsoft Power BI (DAX, Interactive Decomposition Tree, Data Bars, Matrix Views)
+## Project Structure
 
----
+```
+├── notebooks/
+│   ├── 01_load_clean.ipynb       # Data cleaning, type fixes, feature engineering
+│   ├── 02_eda.ipynb              # 8-part exploratory analysis with insights
+│   └── 03_sql_export.ipynb       # Star schema construction + SQL Server export
+├── sql/
+│   ├── SQL_Data_load.sql         # DB/table DDL, BULK INSERT, indexing
+│   └── SQL_Queries.sql           # 20+ analytical queries, 1 reporting view
+├── dashboard/
+│   └── DataCo_Supply_Chain_Dashboard.pbix
+└── README.md
+```
 
-## 🚀 Execution & Verification
-To spin up this architecture on your local environment:
-1. Clone this repository to your processing directory.
-2. Run notebooks `01_load_clean.ipynb` through `03_sql_export.ipynb` within your local data space to clean, refine, and generate your schema dimensions.
-3. Execute `SQL Data load.sql` inside your MS SQL Server instance to build out your core infrastructure and populate the database assets.
-4. Run `SQL Queries.sql` to instantiate analytical optimization frameworks and export reporting insight metrics.
-5. Open the provided `.pbix` template file inside Power BI to view, filter, and interact with the executive supply chain analysis layers.
+## Pipeline Walkthrough
+
+### 1. Data Cleaning & Feature Engineering (`01_load_clean.ipynb`)
+Loaded the raw 53-column Kaggle DataCo dataset and dropped PII and redundant fields (customer email/password/street, product description/image, duplicate ID columns). Standardized all column names to snake_case for SQL compatibility, converted order and shipping dates to proper datetime types, and engineered seven analytical fields directly used downstream in SQL and Power BI:
+
+- `delivery_delay_days` — actual vs. scheduled shipping days (positive = late)
+- `is_on_time` — binary on-time delivery flag
+- `is_discounted` / `is_profitable` — binary flags for discounting and profitability
+- `net_revenue` — sales net of item discount
+- `processing_days` — order-to-ship duration
+- Date parts (year, month, quarter, month name) for the calendar dimension
+
+### 2. Exploratory Data Analysis (`02_eda.ipynb`)
+Eight structured analyses, each closing with a written business insight rather than just a chart: delivery performance overview, shipping mode vs. late-delivery risk, monthly sales trend (2015–2018), sales by market, department profitability, discount impact on profit, customer segment analysis, and an order-status funnel that surfaces fraud and negative-profit orders for investigation.
+
+### 3. Star Schema & SQL Server Export (`03_sql_export.ipynb`)
+Split the cleaned flat file into one fact table and three dimension tables, generated a full calendar dimension via `pd.date_range`, and pushed all four tables to a local SQL Server instance using SQLAlchemy with the `mssql+pyodbc` driver.
+
+### 4. SQL Server: Schema, Load & Analysis (`SQL_Data_load.sql`, `SQL_Queries.sql`)
+Built the database and star schema with primary/foreign keys and check constraints, bulk-loaded all four CSVs, and added targeted nonclustered indexes. On top of that, wrote 20+ production-style queries covering monthly sales trend with running totals (window functions), shipping-mode profitability ranking, customer segment profitability with CTEs, YoY growth and 3-month rolling averages, late-delivery risk by market and payment type, and root-cause investigation of negative-profit orders by category and status. Also created a reusable `vw_delivery_performance` view for the delivery KPIs powering the dashboard.
+
+### 5. Power BI Dashboard
+A 6-page report — Executive Summary, Delivery Performance, Sales & Profit, Product & Department, Global Market Map, and Time Intelligence — backed by DAX measures for YTD/PYTD comparisons, MoM growth, and rolling averages, with drill-through tooltip cards for market and department-level detail.
+
+| Page | Focus |
+|---|---|
+| Executive Summary | Total sales, profit, OTD rate, late-risk rate; monthly trend; sales/profit by market |
+| Delivery Performance | Delivery status by shipping mode, scheduled vs. actual days, late-risk gauge, late % by region |
+| Sales & Profit | Profit margin by department, discount band vs. profit, sales-vs-profit by category |
+| Product & Department | Top 10 products by profit, department treemap, price-band distribution, category profitability table |
+| Global Market Map | 3D market map, regional late-risk ranking, top customer countries by sales |
+| Time Intelligence | YTD vs. PYTD with MoM growth, 3-month rolling average, YoY comparison, seasonal heatmap |
+
+## How to Reproduce
+
+1. Download the [DataCo Smart Supply Chain dataset](https://www.kaggle.com/datasets/shashwatwork/dataco-smart-supply-chain-for-big-data-analysis) and place `DataCoSupplyChainDataset.csv` in the project root.
+2. Run `01_load_clean.ipynb` to produce `dataco_clean.csv`.
+3. Run `02_eda.ipynb` to reproduce the exploratory analysis and charts.
+4. Run `03_sql_export.ipynb` to generate the four star-schema CSVs and push them to SQL Server (update the SQLAlchemy connection string for your instance).
+5. Run `SQL_Data_load.sql` to create the database, tables, and indexes, then bulk-load the CSVs (update file paths to match your environment).
+6. Run the queries in `SQL_Queries.sql` to validate the model and reproduce the dashboard's underlying metrics.
+7. Open `DataCo_Supply_Chain_Dashboard.pbix` in Power BI Desktop and point it at your SQL Server instance.
+
+## Author
+
+**Manikanta Vejandla** — Data Analyst
+[LinkedIn](https://linkedin.com/in/manikanta1015) · [GitHub](https://github.com/ManikantaVejandla04) · [Portfolio](https://manikantavejandla.netlify.app) · vmanikanta1015@gmail.com
